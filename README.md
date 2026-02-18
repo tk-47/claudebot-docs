@@ -26,6 +26,15 @@ Connect your bot to a WeatherFlow Tempest personal weather station. Get live con
 - Intentional Claude bypass for accurate local readings
 - ~5 minute setup
 
+### [Supabase to Convex Migration](supabase-to-convex-migration.md)
+Migrate your bot's database from Supabase to Convex with zero downtime. Uses a backend adapter pattern so you can run both databases in parallel and roll back instantly.
+
+- Schema translation: SQL → TypeScript, pgvector → Convex vector search
+- Drop-in client adapter with identical function signatures
+- Data migration script that preserves existing embeddings
+- Dual-write verification phase before cutover
+- ~1 day active work + 2 days monitoring
+
 ---
 
 ## How to Use
