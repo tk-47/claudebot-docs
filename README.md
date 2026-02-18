@@ -26,6 +26,15 @@ Connect your bot to a WeatherFlow Tempest personal weather station. Get live con
 - Intentional Claude bypass for accurate local readings
 - ~5 minute setup
 
+### [Google Calendar & Sheets](google-api-setup.md)
+Connect your bot to Google Calendar and Google Sheets using lightweight Python CLI scripts and a TypeScript client. Bypasses the broken workspace-mcp server with direct API calls that actually work.
+
+- Calendar: list, create, delete, search events
+- Sheets: read, write, append, create spreadsheets
+- Drive: search spreadsheets by name
+- Shared OAuth credentials — one auth flow covers everything
+- ~15 minute setup
+
 ### [Supabase to Convex Migration](supabase-to-convex-migration.md)
 Migrate your bot's database from Supabase to Convex with zero downtime. Uses a backend adapter pattern so you can run both databases in parallel and roll back instantly.
 
