@@ -35,6 +35,15 @@ Connect your bot to Google Calendar and Google Sheets using lightweight Python C
 - Shared OAuth credentials — one auth flow covers everything
 - ~15 minute setup
 
+### [Fireflies.ai Meeting Transcripts](fireflies-setup.md)
+Connect your bot to Fireflies.ai so meeting transcripts are automatically stored in memory. Summaries become searchable facts, action items become trackable goals, and you get a Telegram notification when it's done.
+
+- Automatic meeting summary storage
+- Action items saved as trackable goals
+- Webhook-based — no polling, no manual steps
+- Searchable via semantic memory — "What did we discuss in the Q1 meeting?"
+- ~10 minute setup
+
 ### [Supabase to Convex Migration](supabase-to-convex-migration.md)
 Migrate your bot's database from Supabase to Convex with zero downtime. Uses a backend adapter pattern so you can run both databases in parallel and roll back instantly.
 
