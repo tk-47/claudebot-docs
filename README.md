@@ -35,6 +35,15 @@ Connect your bot to Google Calendar and Google Sheets using lightweight Python C
 - Shared OAuth credentials — one auth flow covers everything
 - ~15 minute setup
 
+### [Microsoft Teams Integration](teams-setup.md)
+Add Teams as a second messaging platform with synchronized conversations. Messages from Telegram and Teams share the same history — Claude sees full context regardless of where you sent from.
+
+- Synchronized cross-platform conversations
+- Human-in-the-loop via Adaptive Cards
+- Same hybrid routing (VPS + local Mac)
+- No botbuilder SDK — direct Bot Framework REST API
+- ~30 minute setup
+
 ### [Fireflies.ai Meeting Transcripts](fireflies-setup.md)
 Connect your bot to Fireflies.ai so meeting transcripts are automatically stored in memory. Summaries become searchable facts, action items become trackable goals, and you get a Telegram notification when it's done.
 
