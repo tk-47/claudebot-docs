@@ -80,8 +80,8 @@ The voice configuration lives in each agent's config file as a `voice` property 
 |---------|-----------------|---------------------|-------|
 | Google Gemini (STT) | Free | $0.00 | Free tier handles typical personal use |
 | Anthropic API (processing) | ~$0.01 | ~$3.00 | Sonnet-class model, ~2K input / 200 output tokens |
-| Speaktor (TTS) | Included | Included | Covered by Speaktor Pro subscription |
-| **Subtotal** | | **~$3.00/mo** | |
+| Speaktor Pro (TTS) | ~$0.017 | $4.99 (fixed) | 90 min/month plan. At ~20s per reply, 300 msgs = ~100 min — close to the cap. Upgrade to the next tier if you regularly exceed 10 voice msgs/day |
+| **Subtotal** | | **~$7.99/mo** | |
 
 ### Web Real-Time Voice
 
@@ -92,9 +92,11 @@ The voice configuration lives in each agent's config file as a `voice` property 
 | OpenAI TTS (audio output) | ~$0.00015 | ~$0.05 | $0.60 per 1M characters × 250 chars |
 | **Subtotal** | | **~$0.05/mo** | |
 
-### Combined Total: ~$3.05/month
+### Combined Total: ~$8.04/month
 
-The web voice path is nearly free because it uses the Claude subscription (no per-token cost) and OpenAI TTS is extremely cheap at this volume. The Telegram path costs more because the VPS uses the Anthropic API directly (pay-per-token).
+Speaktor Pro ($4.99/mo for 90 minutes) is the largest line item. At 10 Telegram voice messages per day with ~250-character responses (~20 seconds of audio each), you'll use roughly 100 minutes/month — close to the 90-minute cap. If you regularly exceed that, upgrade to the next Speaktor tier or shift more voice usage to the web interface, which uses OpenAI TTS at a fraction of the cost.
+
+The web voice path is nearly free because it uses the Claude subscription (no per-token cost) and OpenAI TTS is extremely cheap at this volume. The Telegram path costs more because the VPS uses the Anthropic API directly (pay-per-token) plus the fixed Speaktor subscription.
 
 ---
 
