@@ -246,7 +246,7 @@ cd teams-manifest && zip -r ../go-teams.zip *
 
 ## Step 11: Test End-to-End
 
-### How to test:
+### How to test: (AFTER restarting the bot from Claude Code)
 
 1. **Basic message:** Open the bot chat in Teams and send "Hello"
    - Bot should respond within a few seconds
@@ -405,4 +405,5 @@ Single-tenant Azure Bots use a specific authentication flow:
 - [Adaptive Cards](https://adaptivecards.io/) — Card schema and designer
 - [jose (npm)](https://github.com/panva/jose) — JWT/JWK library used for token verification
 - [Teams App Manifest Schema](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema) — Manifest reference
+
 
