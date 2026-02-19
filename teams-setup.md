@@ -45,7 +45,7 @@ When Claude needs confirmation (tool calls, decisions), it sends an **Adaptive C
 
 - An **Azure account** with access to create resources (free tier works)
 - A **Microsoft 365 tenant** (work/school account, or a developer tenant)
-- Your bot already running with VPS deployment (`vps.claudebot.uk` or your equivalent)
+- Your bot already running with VPS deployment
 - [Bun](https://bun.sh/) runtime installed
 
 ---
@@ -405,3 +405,4 @@ Single-tenant Azure Bots use a specific authentication flow:
 - [Adaptive Cards](https://adaptivecards.io/) — Card schema and designer
 - [jose (npm)](https://github.com/panva/jose) — JWT/JWK library used for token verification
 - [Teams App Manifest Schema](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema) — Manifest reference
+
