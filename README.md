@@ -53,6 +53,15 @@ Add Teams as a second messaging platform with synchronized conversations. Messag
 - No botbuilder SDK — direct Bot Framework REST API
 - ~30 minute setup
 
+### [Voice Interface — Telegram + Web Real-Time](voice-interface-setup.md)
+Add two voice interfaces: Telegram voice notes (send a voice message, get a voice reply) and a web-based push-to-talk interface over Tailscale with distinct voices for each board agent. Includes cost estimates and a full breakdown of what data is sent to each vendor.
+
+- Telegram: Gemini transcription → Anthropic processing → Speaktor TTS
+- Web: Browser STT (free, on-device) → Claude Code CLI → OpenAI TTS (per-agent voice)
+- 8 distinct agent voices with personality instructions
+- Estimated cost: ~$3/month (Telegram) or ~$0.05/month (web only)
+- ~15 minute setup
+
 ### [Fireflies.ai Meeting Transcripts](fireflies-setup.md)
 Connect your bot to Fireflies.ai so meeting transcripts are automatically stored in memory. Summaries become searchable facts, action items become trackable goals, and you get a Telegram notification when it's done.
 
