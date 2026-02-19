@@ -26,6 +26,15 @@ Connect your bot to a WeatherFlow Tempest personal weather station. Get live con
 - Intentional Claude bypass for accurate local readings
 - ~5 minute setup
 
+### [Oura Ring Health](oura-ring-setup.md)
+Connect your bot to an Oura Ring so your AI assistant understands your body. Sleep scores, readiness, activity, and stress data flow into morning briefings and smart check-ins.
+
+- Sleep, readiness, activity, and stress scores
+- Detailed sleep breakdown — stages, HRV, heart rate, breathing
+- Health-aware smart check-ins — tone adapts to how you slept
+- On-demand queries — "How did I sleep last night?"
+- ~5 minute setup
+
 ### [Google Calendar & Sheets](google-api-setup.md)
 Connect your bot to Google Calendar and Google Sheets using lightweight Python CLI scripts and a TypeScript client. Bypasses the broken workspace-mcp server with direct API calls that actually work.
 
