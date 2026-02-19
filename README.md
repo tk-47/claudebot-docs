@@ -26,13 +26,13 @@ Connect your bot to a WeatherFlow Tempest personal weather station. Get live con
 - Intentional Claude bypass for accurate local readings
 - ~5 minute setup
 
-### [Oura Ring Health](oura-ring-setup.md)
-Connect your bot to an Oura Ring so your AI assistant understands your body. Sleep scores, readiness, activity, and stress data flow into morning briefings and smart check-ins.
+### [Oura Ring + Health Agent](oura-ring-setup.md)
+Connect your bot to an Oura Ring and add a Health Agent to the board. Biometric data flows into morning briefings and smart check-ins, and a dedicated wellness advisor handles everything from sleep analysis to medication lookups.
 
-- Sleep, readiness, activity, and stress scores
-- Detailed sleep breakdown — stages, HRV, heart rate, breathing
+- Sleep, readiness, activity, and stress scores in briefings
+- Health Agent on the board — biometrics, medication info, symptom lookup
 - Health-aware smart check-ins — tone adapts to how you slept
-- On-demand queries — "How did I sleep last night?"
+- Drug interactions, side effects, lab results interpretation
 - ~5 minute setup
 
 ### [Google Calendar & Sheets](google-api-setup.md)
