@@ -75,6 +75,6 @@ Migrate your bot's database from Supabase to Convex with zero downtime. Uses a b
 
 ## About Claudebot
 
-Claudebot is an always-on Telegram agent that relays your messages to Claude and sends back responses. It supports hybrid deployment (local Mac + VPS), persistent memory, proactive check-ins, morning briefings, and direct API integrations for calendar, email, weather, and more.
+Claudebot is an always-on Telegram agent originally created by GodaGo that relays your messages to Claude and sends back responses. It supports hybrid deployment (local Mac + VPS), persistent memory, proactive check-ins, morning briefings, and direct API integrations for calendar, email, weather, and more.
 
 The main repo is private, but these guides are published here for the community.
