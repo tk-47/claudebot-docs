@@ -72,13 +72,15 @@ Meeting ends → Fireflies transcribes
 FIREFLIES_API_KEY=your-api-key-here
 ```
 
-Optional: Add a webhook signing secret for signature verification (recommended for production):
+**Required:** Add a webhook signing secret for signature verification:
 
 ```env
 FIREFLIES_WEBHOOK_SECRET=your-webhook-signing-secret
 ```
 
-If no secret is configured, the bot accepts all incoming webhooks on the endpoint. With a secret, it verifies the `x-ff-signature` header using HMAC SHA-256.
+The bot **rejects all webhooks** if no secret is configured. This prevents attackers from injecting fake transcripts (which would be stored as facts and goals in your memory). The secret is used to verify the `x-ff-signature` header using HMAC SHA-256.
+
+> **Security note (2026-02-24):** Prior versions accepted unsigned webhooks when no secret was set. This was a security vulnerability — any POST to `/webhook/fireflies` with a valid-looking payload would be processed and stored. The default was flipped to reject-by-default. Always configure `FIREFLIES_WEBHOOK_SECRET`.
 
 ### Tell Claude Code:
 "Add the Fireflies credentials to .env"
@@ -104,7 +106,7 @@ If no secret is configured, the bot accepts all incoming webhooks on the endpoin
    ```
 
 4. Set the event type to **Transcription completed** (or equivalent)
-5. If you set a webhook secret in Step 2, configure it here too
+5. Configure the same webhook signing secret you added in Step 2 (required — the bot rejects unsigned webhooks)
 6. Save the webhook
 
 ### Tell Claude Code:
@@ -172,7 +174,7 @@ The webhook handler lives in `bot.ts` (local mode) and listens at `/webhook/fire
 ```
 POST /webhook/fireflies
   │
-  ├── Verify signature (if FIREFLIES_WEBHOOK_SECRET is set)
+  ├── Verify signature (REQUIRED — rejects if FIREFLIES_WEBHOOK_SECRET not set)
   │     └── HMAC SHA-256 of raw body vs x-ff-signature header
   │
   ├── Extract meetingId from webhook payload
@@ -223,7 +225,7 @@ The API endpoint is `https://api.fireflies.ai/graphql`, authenticated with `Bear
 |---------|----------|
 | No notification after meeting | Check that the webhook URL is correct and publicly accessible. Fireflies must be able to reach your server |
 | "Fireflies integration not configured" | `FIREFLIES_API_KEY` is missing from `.env`. Add it and restart |
-| Webhook returns 401 | `FIREFLIES_WEBHOOK_SECRET` is set but doesn't match what Fireflies sends. Make sure both sides use the same secret |
+| Webhook returns 401 | `FIREFLIES_WEBHOOK_SECRET` is missing or doesn't match what Fireflies sends. The secret is required — set it in `.env` and configure the same value in your Fireflies webhook settings |
 | Transcript fetched but no action items | Fireflies' AI didn't detect any action items. This depends on the meeting content |
 | Bot not reachable from internet | You need a public URL. Use a VPS with a domain, or a Cloudflare tunnel / ngrok for local development |
 | "Fireflies API error: 401" | API key is invalid or expired. Get a new one from app.fireflies.ai/integrate |
