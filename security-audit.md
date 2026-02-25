@@ -1,115 +1,172 @@
-# Security Audit Guide for Claudebot
+# Application Security Audit Prompt
 
-> **What this is:** A prompt you can give Claude Code to perform a full security audit of your Claudebot deployment. Copy the audit prompt below, paste it into Claude Code from your project root, and work through the findings together.
+Paste this entire prompt into Claude Code while in your project directory. It will audit your application code for security vulnerabilities, rank them by severity, and walk you through fixing each one.
 
-## Before You Start
-
-- Run the audit from your project root directory (where `src/`, `.env`, etc. live)
-- Have your `.env` file present (Claude Code will check it but won't leak values)
-- The audit covers both local mode (`bot.ts`) and VPS mode (`vps-gateway.ts`)
-- Claude Code will read your code, identify vulnerabilities, and help you fix them
+> **Companion to:** [VPS Hardening Prompt](vps-hardening-prompt-v2.md) — that covers infrastructure (SSH, firewall, OS). This covers your application code.
 
 ---
 
-## The Audit Prompt
-
-Copy everything below the line and paste it into Claude Code:
-
----
+## The Prompt
 
 ```
-Perform a full security audit of this Claudebot codebase. Read every file in src/ and check for the following categories of vulnerabilities. For each issue found, assign a priority (P0 = critical, P1 = high, P2 = medium, P3 = low), explain the risk, and propose a specific fix.
+I need you to perform a comprehensive application-level security audit of this codebase. You are acting as a cybersecurity expert reviewing a production application. Be thorough, be specific, and assume an attacker's mindset.
 
-## 1. Subprocess & Command Injection
+IMPORTANT: Do NOT make any changes yet. This is a read-only audit. We will fix issues one at a time after the full report.
 
-- Check how Claude Code subprocesses are spawned (look in src/lib/claude.ts or similar)
-- Is `--dangerously-skip-permissions` used? If so, this is P0 — any prompt injection in untrusted input (email subjects, calendar events, filenames, webhook payloads) can execute arbitrary commands
-- Fix: Replace with `--allowedTools` using a minimal read-only set (Read, Glob, Grep, WebSearch, WebFetch). The bot's direct API integrations handle external services — Claude subprocess only needs conversational AI capabilities
-- Check for any Bash/exec/spawn calls that interpolate user input without sanitization
+### Phase 1: Understand the Attack Surface
 
-## 2. Authentication & Authorization
+Before looking for bugs, map the entire attack surface by reading the codebase:
 
-- Check every HTTP endpoint in the VPS gateway for authentication
-  - Webhook endpoints (Telegram, GitHub deploy, ElevenLabs, Fireflies, etc.) — do they verify signatures/secrets?
-  - Data endpoints (health, context, status) — do any leak sensitive info without auth?
-- Check webhook signature verification:
-  - Is verification skipped when the secret env var is missing? (It should reject, not allow)
-  - Are secrets compared with constant-time comparison (`crypto.timingSafeEqual`)? String `===` is vulnerable to timing attacks
-- If Microsoft Teams is integrated, check JWT verification:
-  - Are all JWT issuers validated? Watch for "fallback" logic that accepts tokens without issuer checks
-  - Is the audience claim verified?
+1. **Entry points** — Every HTTP endpoint, webhook handler, WebSocket connection, and CLI entrypoint. For each one, document:
+   - URL/path
+   - Authentication method (or lack thereof)
+   - Who can reach it (public internet, internal only, specific services)
+   - What untrusted input it accepts
 
-## 3. CORS & HTTP Headers
+2. **Outbound connections** — Every external API call, database connection, and subprocess spawn. For each one, document:
+   - What credentials are used and how they're stored
+   - Whether secrets could leak (in URLs, logs, error messages)
 
-- Check for `Access-Control-Allow-Origin: *` on any endpoint
-  - Server-to-server endpoints (Telegram webhooks, GitHub webhooks) don't need CORS at all
-  - If a web UI exists, CORS should specify exact origins, never wildcard
-- Check for missing security headers if any endpoint serves HTML
+3. **Subprocess/child process execution** — Any place the app spawns shells, runs commands, or delegates to external tools. Document:
+   - What input flows into the command
+   - What permissions/capabilities the subprocess has
+   - Whether untrusted data could influence execution
 
-## 4. Secrets Management
+4. **File operations** — Any place the app reads, writes, or deletes files based on external input. Document:
+   - Whether filenames/paths are sanitized
+   - Whether uploads are constrained to a safe directory
 
-- Check `.env` and `.env.example` — are any real keys committed?
-- Check git history: `git log --all --oneline -- .env* *.env` for accidental commits
-- Are API keys passed in URL query parameters? (They appear in server logs, proxy logs, error messages) — they should be in headers instead
-- Check for hardcoded secrets, API keys, spreadsheet IDs, or credentials anywhere in source code — these should be env vars
-- Are there any console.log statements that could print secrets?
+5. **Data flow** — Trace how user input moves through the system:
+   - Where does untrusted input enter?
+   - Where is it stored?
+   - Where is it rendered, executed, or passed to other systems?
 
-## 5. Input Validation & Path Traversal
+Present the attack surface as a clear inventory before proceeding.
 
-- Check file upload handling — are filenames sanitized? Can a crafted filename like `../../.env` escape the upload directory?
-- Check any user input that flows into file paths, database queries, or API calls
-- If using SQL/Supabase: check for unsanitized LIKE/ilike patterns (`%` and `_` wildcards in user input)
-- Check for XSS if any user input is rendered in HTML responses
+### Phase 2: Identify Vulnerabilities
 
-## 6. Rate Limiting & DoS
+Now analyze every file for security issues. Check for (but don't limit yourself to):
 
-- Are HTTP endpoints rate-limited? Without rate limiting, an attacker can:
-  - Burn through your Anthropic API credits
-  - Overwhelm the VPS with requests
-  - Trigger excessive Claude subprocess spawns
-- Check that rate limiting uses the real client IP (Cloudflare: `cf-connecting-ip`, otherwise `x-forwarded-for`)
+**Injection & Execution**
+- Command injection (unsanitized input in shell commands, subprocess args)
+- Prompt injection (untrusted content fed to LLM prompts that trigger tool use)
+- SQL/NoSQL injection (unsanitized input in database queries)
+- Path traversal (user-controlled filenames used in file operations)
+- Server-side request forgery (SSRF — user input in URLs the server fetches)
 
-## 7. Resource Management
+**Authentication & Authorization**
+- Unauthenticated endpoints that should require auth
+- Weak or missing webhook signature verification
+- Hardcoded secrets, API keys, or tokens in source code
+- Secrets in URL query parameters (leak in logs)
+- JWT/token validation bypasses or weak fallbacks
+- Missing user authorization checks (authn ≠ authz)
 
-- Are Claude subprocesses killed on timeout? Zombie processes can accumulate
-- Are uploaded/temporary files cleaned up after processing?
-- Are there any unbounded in-memory data structures (maps, arrays) that grow without cleanup?
+**Cryptographic Issues**
+- Non-constant-time secret comparison (timing attacks)
+- Weak or missing HMAC/signature verification
+- Use of broken or obsolete crypto algorithms
 
-## 8. Logging & Information Disclosure
+**Configuration & Exposure**
+- Overly permissive CORS headers
+- Verbose error messages that leak internals
+- Debug/development endpoints left enabled in production
+- Sensitive data in console logs
+- Missing rate limiting on public endpoints
+- Hardcoded configuration that should be in environment variables
 
-- Are full message contents logged? Truncate to prevent sensitive data in logs
-- Do error responses leak internal details (stack traces, file paths, env var names)?
-- Are API error messages sanitized before being sent back to the user?
+**Data Handling**
+- Secrets in git history (.env files, API keys committed then removed)
+- Uploaded files never cleaned up (disk exhaustion)
+- Sensitive data stored unencrypted
+- Missing input validation at system boundaries
 
-## Output Format
+### Phase 3: Classify and Rank
 
-For each finding, use this format:
+For each issue found, assign a severity:
 
-### P[0-3]-[number]: [Short title]
-**File:** `path/to/file.ts`
-**Risk:** [What an attacker could do]
-**Fix:** [Specific code change needed]
+| Severity | Criteria | Examples |
+|----------|----------|----------|
+| **P0 — Critical** | Remote code execution, full system compromise, or data breach possible with no authentication | Unrestricted subprocess execution, unauthenticated admin endpoints |
+| **P1 — High** | Significant security impact, exploitable by an external attacker with minimal effort | Missing webhook auth, path traversal, SSRF, secrets in URLs |
+| **P2 — Medium** | Security weakness that requires specific conditions or has limited blast radius | Timing attacks, missing rate limiting, weak JWT validation |
+| **P3 — Low** | Best practice violations, defense-in-depth improvements, or issues with minimal real-world impact | Verbose logging, missing cleanup, hardcoded non-secret config |
 
-After listing all findings, help me fix them one at a time, starting with P0.
+Present the full report as a ranked table:
+
+| # | Issue | File(s) | Severity | Description |
+|---|-------|---------|----------|-------------|
+
+### Phase 4: Fix One at a Time
+
+After presenting the report, say: "Ready to begin fixes. Which severity level should we start with?"
+
+For each fix:
+1. Explain the vulnerability in plain language — what an attacker could do
+2. Propose the fix with specific code changes
+3. Explain the practical impact — will anything break?
+4. Wait for my approval before implementing
+5. Implement, commit with a descriptive message, and move to the next issue
+
+Do NOT batch fixes. One issue per commit so each can be individually reverted if needed.
+
+### Phase 5: Verification
+
+After all fixes are applied:
+1. Re-scan for any issues introduced by the fixes themselves
+2. Provide a final before/after summary table
+3. Note any remaining risks that can't be fixed in code (e.g., "consider adding Cloudflare WAF rules")
+
+### Rules
+
+- Read EVERY source file. Do not skip files because they "look fine."
+- Check config files too: .env.example, package.json, docker-compose, CI/CD configs.
+- If you find secrets committed in git history, flag it even if they're now in .gitignore.
+- Consider the FULL chain: if untrusted input from Service A flows through the database and is later used in Service B, that's a vulnerability in Service B even though Service A looks safe.
+- When in doubt, flag it. False positives are better than missed vulnerabilities.
+- Save the audit results to memory so we can reference them in future sessions.
+
+Be thorough. Be methodical. Miss nothing.
 ```
 
 ---
 
-## What to Expect
+## How to Use
 
-The audit typically finds issues in these areas:
+1. **Open Claude Code** in your project directory
+2. **Paste the entire prompt above**
+3. **Wait for the full report** — don't interrupt the audit phase
+4. **Review the findings** and approve/deny each fix
+5. **Test your application** after all fixes are applied
 
-| Priority | Common Findings |
-|----------|----------------|
-| **P0** | Unrestricted subprocess permissions, unauthenticated endpoints exposing data |
-| **P1** | Missing webhook signature verification, path traversal in file uploads, API keys in URLs |
-| **P2** | No rate limiting, timing-attack-vulnerable secret comparisons, JWT verification gaps |
-| **P3** | Verbose logging, temp file cleanup, hardcoded config values |
+## What This Catches
 
-## After the Audit
+| Category | What It Finds |
+|----------|--------------|
+| **Injection** | Command injection, prompt injection, SQL injection, path traversal |
+| **Auth gaps** | Unauthenticated endpoints, missing webhook verification, JWT bypasses |
+| **Secret leaks** | API keys in URLs/logs, hardcoded credentials, secrets in git history |
+| **Crypto flaws** | Timing attacks, weak signature verification |
+| **Config issues** | Permissive CORS, missing rate limiting, debug endpoints in production |
+| **Data handling** | File upload abuse, sensitive data in logs, missing cleanup |
 
-- Fix P0 issues immediately — these allow remote code execution or data exposure
-- Fix P1 issues before deploying to production
-- P2 and P3 can be addressed incrementally
-- Re-run the audit after major changes or new integrations
-- Keep your findings documented so you can track what's been fixed
+## When to Run This
+
+- **After initial development** — before going to production
+- **After adding a new integration** — each webhook/API adds attack surface
+- **After adding subprocess execution** — shells and LLM tool use are high-risk
+- **Periodically** — every few months, or after major feature work
+- **After a dependency update** — new APIs may change security assumptions
+
+## Complements (Not Replaces)
+
+This prompt audits your **application code**. You also need:
+
+- **[VPS Hardening](vps-hardening-prompt-v2.md)** — SSH, firewall, OS security
+- **Dependency auditing** — `npm audit`, `bun audit`, Snyk, or Dependabot
+- **Secret scanning** — GitHub secret scanning, truffleHog, or gitleaks
+- **Runtime monitoring** — Log aggregation, uptime monitoring, alerting
+
+---
+
+*Created from a real security audit that found 16 issues across 4 severity levels in a production Telegram bot. Every category above reflects an actual vulnerability that was discovered and fixed.*
