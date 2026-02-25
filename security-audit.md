@@ -1,78 +1,115 @@
-# Claudebot Security Audit — 2026-02-24
+# Security Audit Guide for Claudebot
 
-Full security audit of the Claudebot codebase. Fixes are applied incrementally.
+> **What this is:** A prompt you can give Claude Code to perform a full security audit of your Claudebot deployment. Copy the audit prompt below, paste it into Claude Code from your project root, and work through the findings together.
 
-## P0-1: Removed `--dangerously-skip-permissions` from bot subprocesses
-**Status: FIXED (2026-02-24)**
-**File:** `src/lib/claude.ts`
+## Before You Start
 
-### What was wrong
-Both `callClaude()` and `runClaudeWithTimeout()` passed `--dangerously-skip-permissions` to every Claude Code subprocess spawned by the bot. This gave full unrestricted access (Bash, Write, Edit, all tools) to the subprocess, meaning any prompt injection in untrusted context (email subjects, calendar titles, meeting transcripts, document filenames) could execute arbitrary commands on the Mac.
-
-### What was changed
-- Replaced `--dangerously-skip-permissions` with `--allowedTools` using a read-only allowlist: `Read, Glob, Grep, WebSearch, WebFetch`
-- Callers can still override via the `allowedTools` option in `ClaudeOptions`
-- Added `DEFAULT_ALLOWED_TOOLS` constant with documentation
-
-### Why this is safe
-The bot already has direct API integrations for all external services:
-- `src/lib/ms365.ts` — calendar, email, tasks (Microsoft Graph API)
-- `src/lib/sheets.ts` — Google Sheets (direct OAuth)
-- `src/lib/weather.ts` — Tempest weather station
-- `src/lib/flightaware.ts` — FlightAware AeroAPI
-- `src/lib/voice.ts` — ElevenLabs TTS/calls
-- `src/lib/transcribe.ts` — Gemini transcription
-
-Claude subprocess is only needed for conversational AI. It doesn't need Bash or Write.
-
-### What to watch for
-- If a new feature genuinely needs the bot's Claude subprocess to run commands, add the specific tool to the `allowedTools` array for that call — don't re-add `--dangerously-skip-permissions`
-- Interactive Claude Code sessions (terminal) are NOT affected by this change
-
-### Rollback
-If the bot breaks due to this change, revert `DEFAULT_ALLOWED_TOOLS` or pass a broader `allowedTools` for the specific call that needs it. As a last resort, re-add `--dangerously-skip-permissions` to the args array in both functions, but understand the risk.
+- Run the audit from your project root directory (where `src/`, `.env`, etc. live)
+- Have your `.env` file present (Claude Code will check it but won't leak values)
+- The audit covers both local mode (`bot.ts`) and VPS mode (`vps-gateway.ts`)
+- Claude Code will read your code, identify vulnerabilities, and help you fix them
 
 ---
 
-## Remaining issues (in priority order)
+## The Audit Prompt
 
-### P0-2: `/context` endpoint unauthenticated
-**Status: FIXED (2026-02-24)** — Endpoint disabled entirely (returns 404). Voice agent is not configured yet. When re-enabling, add Bearer token auth using `GATEWAY_SECRET` before returning any data. See comment in `src/vps-gateway.ts`.
+Copy everything below the line and paste it into Claude Code:
 
-### P0-3: CORS `Access-Control-Allow-Origin: *` on all VPS endpoints
-**Status: FIXED (2026-02-24)** — Removed all CORS headers and OPTIONS preflight handler. All VPS callers (Telegram, GitHub, Teams, ElevenLabs) are server-to-server and don't need CORS. If a web UI is added later, add CORS to that specific endpoint with a specific origin — not a wildcard.
+---
 
-### P1-1: ElevenLabs webhook `/webhook/elevenlabs` has no authentication
-**Status: FIXED (2026-02-24)** — Endpoint disabled (returns 404). Voice agent not configured. When re-enabling, add shared secret or signature verification before processing payloads.
+```
+Perform a full security audit of this Claudebot codebase. Read every file in src/ and check for the following categories of vulnerabilities. For each issue found, assign a priority (P0 = critical, P1 = high, P2 = medium, P3 = low), explain the risk, and propose a specific fix.
 
-### P1-2: Fireflies webhook signature verification defaults to open
-**Status: FIXED (2026-02-24)** — Flipped default from `return true` to `return false` when `FIREFLIES_WEBHOOK_SECRET` is not set. Unsigned webhooks are now rejected. Set the secret in `.env` to enable Fireflies integration.
+## 1. Subprocess & Command Injection
 
-### P1-3: File upload path traversal
-**Status: FIXED (2026-02-24)** — Filename sanitized with `basename()` + `..` replacement in `src/bot.ts`. A crafted filename like `../../.env` is now reduced to `.env` (basename strips directory components) and any remaining `..` sequences are replaced with `_`. Files always land inside `uploads/`.
+- Check how Claude Code subprocesses are spawned (look in src/lib/claude.ts or similar)
+- Is `--dangerously-skip-permissions` used? If so, this is P0 — any prompt injection in untrusted input (email subjects, calendar events, filenames, webhook payloads) can execute arbitrary commands
+- Fix: Replace with `--allowedTools` using a minimal read-only set (Read, Glob, Grep, WebSearch, WebFetch). The bot's direct API integrations handle external services — Claude subprocess only needs conversational AI capabilities
+- Check for any Bash/exec/spawn calls that interpolate user input without sanitization
 
-### P1-4: Gemini API key in URL query parameter
-**Status: FIXED (2026-02-24)** — Moved API key from `?key=` query parameter to `x-goog-api-key` header in both `transcribeAudio()` and `transcribeAudioBuffer()` in `src/lib/transcribe.ts`. Key no longer appears in server logs, proxy logs, or error messages containing the URL.
+## 2. Authentication & Authorization
 
-### P2-1: No rate limiting on VPS HTTP endpoints
-**Status: FIXED (2026-02-24)** — Added in-memory per-IP sliding window rate limiter in `src/vps-gateway.ts`. 30 requests/minute per IP. /health exempt. Uses `cf-connecting-ip` header (Cloudflare) or `x-forwarded-for` fallback. Stale entries purged every 5 minutes.
-### P2-2: Non-constant-time secret comparison (timing attack)
-**Status: FIXED (2026-02-24)** — Replaced all `===`/`!==` secret comparisons with `crypto.timingSafeEqual()` in 4 locations: deploy webhook HMAC (`vps-gateway.ts`), Telegram webhook secret (`vps-gateway.ts`), Fireflies webhook HMAC (`fireflies.ts`), and voice server token (`voice-server.ts`).
-### P2-3: JWT issuer bypass in Teams auth fallback
-**Status: FIXED (2026-02-24)** — Removed the "last resort" issuer-less JWT verification fallback in `src/lib/teams-auth.ts`. Tokens must now match a known issuer (Bot Framework, emulator, or configured tenant). Without this, any Azure AD tenant could forge tokens with the correct audience.
-### P2-4: ilike pattern injection in Supabase queries (unsanitized `%` and `_`)
-**Status: REMOVED (2026-02-24)** — `src/lib/supabase.ts` deleted entirely. Convex is now the sole backend. Convex queries don't use SQL LIKE patterns.
-### P2-5: Supabase anon key fallback (RLS dependency)
-**Status: REMOVED (2026-02-24)** — `src/lib/supabase.ts` deleted entirely. Convex uses a single URL-based auth model.
+- Check every HTTP endpoint in the VPS gateway for authentication
+  - Webhook endpoints (Telegram, GitHub deploy, ElevenLabs, Fireflies, etc.) — do they verify signatures/secrets?
+  - Data endpoints (health, context, status) — do any leak sensitive info without auth?
+- Check webhook signature verification:
+  - Is verification skipped when the secret env var is missing? (It should reject, not allow)
+  - Are secrets compared with constant-time comparison (`crypto.timingSafeEqual`)? String `===` is vulnerable to timing attacks
+- If Microsoft Teams is integrated, check JWT verification:
+  - Are all JWT issuers validated? Watch for "fallback" logic that accepts tokens without issuer checks
+  - Is the audience claim verified?
 
-### P3-1: Console logging of sensitive message content
-**Status: FIXED (2026-02-24)** — Truncated voice transcription log to 50 chars (was 80) for consistency. All message logs already truncate to 50 chars. Low risk — logs are server-side only.
+## 3. CORS & HTTP Headers
 
-### P3-2: Uploaded files never cleaned up
-**Status: FIXED (2026-02-24)** — Added `unlink()` after Claude processes photos and documents in `src/bot.ts`. Voice files already had cleanup. Prevents disk space growth from accumulated temp files.
+- Check for `Access-Control-Allow-Origin: *` on any endpoint
+  - Server-to-server endpoints (Telegram webhooks, GitHub webhooks) don't need CORS at all
+  - If a web UI exists, CORS should specify exact origins, never wildcard
+- Check for missing security headers if any endpoint serves HTML
 
-### P3-3: `.env.local` may be in git history
-**Status: NOT AN ISSUE** — Verified `.env.local` was never committed to git. `.gitignore` already covers `.env.*`.
+## 4. Secrets Management
 
-### P3-4: Hardcoded attendance spreadsheet ID
-**Status: FIXED (2026-02-24)** — Moved from hardcoded string to `ATTENDANCE_SHEET_ID` env var in `src/bot.ts`. Added to `.env.example`.
+- Check `.env` and `.env.example` — are any real keys committed?
+- Check git history: `git log --all --oneline -- .env* *.env` for accidental commits
+- Are API keys passed in URL query parameters? (They appear in server logs, proxy logs, error messages) — they should be in headers instead
+- Check for hardcoded secrets, API keys, spreadsheet IDs, or credentials anywhere in source code — these should be env vars
+- Are there any console.log statements that could print secrets?
+
+## 5. Input Validation & Path Traversal
+
+- Check file upload handling — are filenames sanitized? Can a crafted filename like `../../.env` escape the upload directory?
+- Check any user input that flows into file paths, database queries, or API calls
+- If using SQL/Supabase: check for unsanitized LIKE/ilike patterns (`%` and `_` wildcards in user input)
+- Check for XSS if any user input is rendered in HTML responses
+
+## 6. Rate Limiting & DoS
+
+- Are HTTP endpoints rate-limited? Without rate limiting, an attacker can:
+  - Burn through your Anthropic API credits
+  - Overwhelm the VPS with requests
+  - Trigger excessive Claude subprocess spawns
+- Check that rate limiting uses the real client IP (Cloudflare: `cf-connecting-ip`, otherwise `x-forwarded-for`)
+
+## 7. Resource Management
+
+- Are Claude subprocesses killed on timeout? Zombie processes can accumulate
+- Are uploaded/temporary files cleaned up after processing?
+- Are there any unbounded in-memory data structures (maps, arrays) that grow without cleanup?
+
+## 8. Logging & Information Disclosure
+
+- Are full message contents logged? Truncate to prevent sensitive data in logs
+- Do error responses leak internal details (stack traces, file paths, env var names)?
+- Are API error messages sanitized before being sent back to the user?
+
+## Output Format
+
+For each finding, use this format:
+
+### P[0-3]-[number]: [Short title]
+**File:** `path/to/file.ts`
+**Risk:** [What an attacker could do]
+**Fix:** [Specific code change needed]
+
+After listing all findings, help me fix them one at a time, starting with P0.
+```
+
+---
+
+## What to Expect
+
+The audit typically finds issues in these areas:
+
+| Priority | Common Findings |
+|----------|----------------|
+| **P0** | Unrestricted subprocess permissions, unauthenticated endpoints exposing data |
+| **P1** | Missing webhook signature verification, path traversal in file uploads, API keys in URLs |
+| **P2** | No rate limiting, timing-attack-vulnerable secret comparisons, JWT verification gaps |
+| **P3** | Verbose logging, temp file cleanup, hardcoded config values |
+
+## After the Audit
+
+- Fix P0 issues immediately — these allow remote code execution or data exposure
+- Fix P1 issues before deploying to production
+- P2 and P3 can be addressed incrementally
+- Re-run the audit after major changes or new integrations
+- Keep your findings documented so you can track what's been fixed
