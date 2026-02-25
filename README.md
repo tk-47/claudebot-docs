@@ -1,6 +1,6 @@
 # Claudebot Setup Guides
 
-Setup guides for [Claudebot](https://github.com/tk-47/go-telegram-bot) — an always-on AI Telegram agent built by GodaGo with [Claude Code](https://claude.ai/claude-code).
+Setup guides for [Claudebot](https://github.com/tk-47/claudebot) — an always-on AI Telegram agent built by GodaGo with [Claude Code](https://claude.ai/claude-code).
 
 Each guide is designed to be **dropped into a Claude Code session** — Claude will walk you through the setup interactively.
 
