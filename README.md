@@ -82,6 +82,32 @@ Migrate your bot's database from Supabase to Convex with zero downtime. Uses a b
 
 ---
 
+## Security
+
+Your bot handles API keys, webhooks, user messages, and runs on a public-facing server. These two prompts work together to lock down both layers — paste them into Claude Code and it walks you through everything interactively.
+
+### [Application Security Audit](security-audit.md)
+A 5-phase audit prompt that reviews your application code for vulnerabilities. Paste it into Claude Code from your project root — it maps your attack surface, identifies issues ranked by severity, and helps you fix them one commit at a time.
+
+- Injection: command injection, prompt injection, path traversal, SSRF
+- Auth gaps: unauthenticated endpoints, missing webhook verification, JWT bypasses
+- Secret leaks: API keys in URLs/logs, hardcoded credentials, secrets in git history
+- Crypto: timing attacks, weak signature verification
+- Config: permissive CORS, missing rate limiting, verbose error messages
+- Created from a real audit that found 16 issues across 4 severity levels
+
+### [VPS Hardening](vps-hardening.md)
+A 9-phase hardening prompt for your Linux VPS. Paste it into Claude Code while SSH'd into your server — it audits your current state, locks down SSH, sets up firewall rules, and verifies nothing broke.
+
+- SSH hardening: disable root, key-only auth, AllowUsers, idle timeout, optional port change
+- Fail2Ban with 24-hour progressive bans for repeat offenders
+- UFW firewall with Docker-aware iptables rules
+- Cloudflare origin protection — locks ports 80/443 to Cloudflare IP ranges
+- File permissions audit, process isolation, unused service cleanup
+- Automatic security updates
+
+---
+
 ## How to Use
 
 1. Copy the `.md` file for the integration you want
