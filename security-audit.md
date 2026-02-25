@@ -2,7 +2,7 @@
 
 Paste this entire prompt into Claude Code while in your project directory. It will audit your application code for security vulnerabilities, rank them by severity, and walk you through fixing each one.
 
-> **Companion to:** [VPS Hardening Prompt](vps-hardening-prompt-v2.md) — that covers infrastructure (SSH, firewall, OS). This covers your application code.
+> **Companion to:** [VPS Hardening Prompt](vps-hardening.md) — that covers infrastructure (SSH, firewall, OS). This covers your application code.
 
 ---
 
