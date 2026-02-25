@@ -162,7 +162,7 @@ Be thorough. Be methodical. Miss nothing.
 
 This prompt audits your **application code**. You also need:
 
-- **[VPS Hardening](vps-hardening-prompt-v2.md)** — SSH, firewall, OS security
+- **[VPS Hardening](vps-hardening.md)** — SSH, firewall, OS security
 - **Dependency auditing** — `npm audit`, `bun audit`, Snyk, or Dependabot
 - **Secret scanning** — GitHub secret scanning, truffleHog, or gitleaks
 - **Runtime monitoring** — Log aggregation, uptime monitoring, alerting
