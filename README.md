@@ -1,4 +1,19 @@
-# Claudebot Setup Guides
+# ARCHIVED — Moved to gobot-tools
+
+> **This repo has been archived.** All setup guides have been superseded by [gobot-tools](https://github.com/tk-47/gobot-tools), a CLI marketplace that handles installation, configuration, and updates for bot integrations.
+>
+> **Use gobot-tools instead:**
+> ```bash
+> npx gobot-tools list        # browse available tools
+> npx gobot-tools install <tool>  # install an integration
+> npx gobot-tools update <tool>   # update to latest version
+> ```
+>
+> The guides below are preserved for reference but are no longer maintained. For current docs, see the [gobot-tools README](https://github.com/tk-47/gobot-tools#readme) and individual tool READMEs in `packages/`.
+
+---
+
+# Claudebot Setup Guides (Legacy)
 
 Setup guides for [Claudebot](https://github.com/tk-47/claudebot) — an always-on AI Telegram agent built by GodaGo with [Claude Code](https://claude.ai/claude-code).
 
